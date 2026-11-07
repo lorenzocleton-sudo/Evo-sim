@@ -1637,7 +1637,13 @@ $('loadBtn').addEventListener('click',()=>{try{const c=localStorage.getItem(SAVE
 $('exportBtn').addEventListener('click',async()=>{const code=await packStr(serialize());$('codeBox').value=code;toast(`Code ready (${Math.round(code.length/1024)} KB)`);});
 $('copyBtn').addEventListener('click',async()=>{const v=$('codeBox').value;if(!v){toast('Create a code first');return;}try{await navigator.clipboard.writeText(v);toast('📋 Copied');}catch(e){$('codeBox').select();try{document.execCommand('copy');toast('📋 Copied');}catch(_){toast('Select the text and copy it');}}});
 $('dlBtn').addEventListener('click',async()=>{let v=$('codeBox').value;if(!v){v=await packStr(serialize());$('codeBox').value=v;}
-  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([v],{type:'text/plain'}));a.download=`primordia-${biome}-gen${maxGen}.txt`;document.body.appendChild(a);a.click();a.remove();});
+  const filename=`primordia-${biome}-gen${maxGen}.txt`;
+  if(window.claude&&window.claude.use){ // inside the claude.ai viewer: files go through the downloads capability
+    const dl=await window.claude.use('downloads');
+    if(!dl){toast('Download unavailable here — use 📋 Copy');return;}
+    try{await dl.save({filename,data:v});toast('⬇️ Saved');}catch(e){if(e&&e.code!=='declined')toast(e&&e.code==='rate_limited'?'Please wait a moment and try again':'Download unavailable — use 📋 Copy');}
+    return;}
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([v],{type:'text/plain'}));a.download=filename;document.body.appendChild(a);a.click();a.remove();});
 $('importBtn').addEventListener('click',()=>{const v=$('codeBox').value.trim();if(v)loadCode(v);else toast('Paste a code first');});
 $('fileIn').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;f.text().then(t=>loadCode(t));e.target.value='';});
 
